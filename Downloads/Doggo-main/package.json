@@ -1,0 +1,16 @@
+{
+  "name": "doggo-gorb-website",
+  "version": "1.0.0",
+  "description": "Doggo_Gorb NFT Website",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 3000 -o",
+    "start": "npx http-server -p 3000 -o"
+  },
+  "keywords": ["nft", "doggo", "gorb", "website"],
+  "author": "Doggo_Gorb",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

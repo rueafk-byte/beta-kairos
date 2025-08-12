@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: doggo-nft-website
+    env: static
+    buildCommand: null
+    staticPublishPath: .
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
