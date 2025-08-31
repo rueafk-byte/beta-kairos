@@ -778,19 +778,19 @@ By signing this message, you agree to connect your wallet to the Kaboom game.`;
     showWalletSelector() {
         const availableWallets = this.getAvailableWallets();
         
-        // Create modal HTML
+        // Create modal HTML without inline event handlers
         const modalHTML = `
             <div id="walletSelectorModal" class="wallet-selector-modal">
                 <div class="wallet-selector-content">
                     <div class="wallet-selector-header">
                         <h3>🔗 Choose Your Wallet</h3>
-                        <button class="close-btn" onclick="this.closest('.wallet-selector-modal').remove()">×</button>
+                        <button class="close-btn" data-action="close-modal">×</button>
                     </div>
                     <div class="wallet-selector-body">
                         <p>Select a Solana wallet to connect:</p>
                         <div class="wallet-list">
                             ${availableWallets.map(wallet => `
-                                <div class="wallet-option" onclick="window.walletConnection.connectWallet('${wallet.key}'); this.closest('.wallet-selector-modal').remove();">
+                                <div class="wallet-option" data-wallet="${wallet.key}">
                                     <div class="wallet-icon">${wallet.icon}</div>
                                     <div class="wallet-info">
                                         <div class="wallet-name">${wallet.name}</div>
@@ -807,6 +807,36 @@ By signing this message, you agree to connect your wallet to the Kaboom game.`;
 
         // Add modal to page
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add event listeners without inline handlers
+        const modal = document.getElementById('walletSelectorModal');
+        
+        // Close button handler
+        const closeBtn = modal.querySelector('.close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+            });
+        }
+        
+        // Wallet option handlers
+        const walletOptions = modal.querySelectorAll('.wallet-option');
+        walletOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const walletType = option.dataset.wallet;
+                if (walletType) {
+                    window.walletConnection.connectWallet(walletType);
+                    modal.remove();
+                }
+            });
+        });
+        
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
         
         // Add CSS if not already present
         if (!document.getElementById('walletSelectorCSS')) {
