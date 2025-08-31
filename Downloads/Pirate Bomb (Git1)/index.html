@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaboom</title>
+    <link rel="icon" type="image/png" href="Sprites/emojis/bomb.png">
+    <link rel="apple-touch-icon" href="Sprites/emojis/bomb.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="Sprites/emojis/bomb.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="Sprites/emojis/bomb.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="Sprites/emojis/bomb.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="Sprites/emojis/bomb.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="Sprites/emojis/bomb.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="Sprites/emojis/bomb.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 50%, #E0F6FF 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+        }
+        
+        .game-container {
+            position: relative;
+            border: 4px solid #4682B4;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 30px rgba(70, 130, 180, 0.4),
+                inset 0 0 20px rgba(135, 206, 235, 0.3);
+            background: linear-gradient(145deg, #E0F6FF, #B0E0E6);
+            max-width: 100vw;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #E0F6FF;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .top-ui {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .left-panel {
+            background: rgba(135, 206, 235, 0.3);
+            border: 2px solid rgba(70, 130, 180, 0.6);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(70, 130, 180, 0.3);
+            min-width: 280px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .right-panel {
+            background: rgba(135, 206, 235, 0.3);
+            border: 2px solid rgba(70, 130, 180, 0.6);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(70, 130, 180, 0.3);
+            min-width: 400px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .health-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 80px;
+        }
+        
+        .health-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.35), rgba(0,0,0,0));
+            filter: drop-shadow(0 0 6px rgba(255, 105, 180, 0.35));
+        }
+        
+        .heart-image {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            animation: heartBeat 2s ease-in-out infinite;
+            transform-origin: center center;
+        }
+        
+        @keyframes heartBeat {
+            0%, 100% { 
+                transform: scale(1);
+            }
+            50% { 
+                transform: scale(1.1);
+            }
+        }
+        
+        .health-count {
+            color: #FF6B6B;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .health-bar {
+            width: 80px;
+            height: 12px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid #FF6B6B;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #FF8E8E);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .health-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .bomb-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+        
+        .bomb-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.35), rgba(0,0,0,0));
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.35));
+        }
+        
+        .bomb-image {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            animation: bombGlow 2s ease-in-out infinite;
+            transform-origin: center center;
+        }
+        
+        @keyframes bombGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 0px rgba(255, 200, 0, 0.0));
+            }
+            50% { 
+                filter: drop-shadow(0 0 8px rgba(255, 200, 0, 0.8));
+            }
+        }
+        
+        .bomb-count {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+
+        
+        .score-container, .total-score-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 60px;
+        }
+        
+        .score-label {
+            color: #4682B4;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+        
+        .level-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 60px;
+        }
+        
+        .score-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.35), rgba(0,0,0,0));
+            filter: drop-shadow(0 0 6px rgba(255, 165, 0, 0.35));
+        }
+        
+        .score-image {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            animation: scoreGlow 3s ease-in-out infinite;
+            transform-origin: center center;
+        }
+        
+        @keyframes scoreGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 0px rgba(255, 165, 0, 0.0));
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px rgba(255, 165, 0, 0.8));
+            }
+        }
+        
+        .score-count {
+            color: #00FF88;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .level-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.35), rgba(0,0,0,0));
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.35));
+        }
+        
+        .level-image {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            animation: levelShine 2.5s ease-in-out infinite;
+            transform-origin: center center;
+        }
+        
+        @keyframes levelShine {
+            0%, 100% { 
+                filter: drop-shadow(0 0 0px rgba(255, 215, 0, 0.0));
+            }
+            50% { 
+                filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9));
+            }
+        }
+        
+        .level-count {
+            color: #4682B4;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .lives-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 60px;
+        }
+        
+        .lives-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.35), rgba(0,0,0,0));
+            filter: drop-shadow(0 0 6px rgba(0, 191, 255, 0.35));
+        }
+        
+        .lives-image {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            animation: livesSparkle 3s ease-in-out infinite;
+            transform-origin: center center;
+        }
+        
+        @keyframes livesSparkle {
+            0%, 100% { 
+                filter: drop-shadow(0 0 0px rgba(0, 191, 255, 0.0));
+            }
+            50% { 
+                filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.8));
+            }
+        }
+        
+        .lives-count {
+            color: #FF6B6B;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+
+        
+
+        
+        .controls {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            background: rgba(135, 206, 235, 0.4);
+            border: 3px solid rgba(70, 130, 180, 0.8);
+            border-radius: 15px;
+            padding: 15px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #4682B4;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            display: none;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(70, 130, 180, 0.3);
+            min-width: 200px;
+            z-index: 14;
+        }
+        
+        .controls.show {
+            display: block;
+        }
+        
+        .controls-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #4682B4;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .control-item {
+            margin-bottom: 4px;
+            padding: 2px 0;
+        }
+        
+        .game-over, .pause-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(135, 206, 235, 0.4);
+            color: #4682B4;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            border: 2px solid #4682B4;
+            box-shadow: 0 10px 30px rgba(70, 130, 180, 0.3);
+            min-width: 400px;
+            max-width: 500px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .game-over h2, .pause-screen h2 {
+            color: #4682B4;
+            margin: 0 0 20px 0;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes gameOverPulse {
+            0%, 100% { 
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% { 
+                transform: scale(1.02);
+                filter: brightness(1.2);
+            }
+        }
+        
+        .final-score {
+            color: #4682B4;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            background: rgba(135, 206, 235, 0.2);
+            border: 1px solid rgba(70, 130, 180, 0.4);
+            border-radius: 10px;
+        }
+
+        /* Game Over Buttons */
+        .game-over-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .game-over-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .game-over-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .profile-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .profile-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .recharge-btn {
+            background: #f5576c;
+            color: white;
+        }
+
+        .recharge-btn:hover {
+            background: #e04a5f;
+        }
+        
+        .hint-text {
+            color: #87CEEB;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: none;
+            gap: 15px;
+            justify-content: space-between;
+            z-index: 10;
+        }
+        
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 3px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn:active {
+            background: linear-gradient(145deg, rgba(255,255,255,0.4), rgba(255,255,255,0.3));
+            transform: scale(0.9);
+        }
+        
+        .control-btn.jump {
+            background: linear-gradient(145deg, rgba(0,255,0,0.3), rgba(0,200,0,0.2));
+            border-color: rgba(0,255,0,0.6);
+        }
+        
+        .control-btn.bomb {
+            background: linear-gradient(145deg, rgba(255,255,0,0.3), rgba(255,200,0,0.2));
+            border-color: rgba(255,255,0,0.6);
+        }
+        
+        .dpad {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 8px;
+            width: 140px;
+            height: 140px;
+        }
+        
+        .dpad-btn {
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .dpad-btn:active {
+            background: linear-gradient(145deg, rgba(255,255,255,0.4), rgba(255,255,255,0.3));
+            transform: scale(0.95);
+        }
+        
+        .sound-toggle {
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 10px;
+            padding: 6px 10px;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        .sound-toggle:hover {
+            background: linear-gradient(145deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
+            transform: scale(1.05);
+        }
+        
+        .control-separator {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
+            margin: 8px 0;
+        }
+        
+        .welcome-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 50%, #E0F6FF 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #4682B4;
+            z-index: 200;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .welcome-content {
+            text-align: center;
+            background: rgba(135, 206, 235, 0.3);
+            padding: 50px 40px;
+            border-radius: 24px;
+            border: 2px solid rgba(70, 130, 180, 0.6);
+            box-shadow: 
+                0 20px 60px rgba(70, 130, 180, 0.4),
+                0 0 120px rgba(135, 206, 235, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            max-width: 500px;
+            width: 100%;
+            box-sizing: border-box;
+            margin: auto;
+        }
+
+        .welcome-menu h1 {
+            font-size: 48px;
+            margin-bottom: 30px;
+            color: #4682B4;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            animation: bounce 2s infinite;
+        }
+
+        .game-title-header {
+            position: absolute;
+            top: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 300;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .game-title-header h1 {
+            font-size: 48px;
+            margin: 0;
+            color: #4682B4;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            animation: bounce 2s infinite;
+            line-height: 1.2;
+        }
+
+        .welcome-content h1 {
+            font-size: 48px;
+            margin: 0 0 30px 0;
+            color: #4682B4;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            animation: bounce 2s infinite;
+            line-height: 1.2;
+        }
+
+        /* Web3 UI Styles */
+
+        .wallet-status {
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            transition: all 0.3s ease;
+        }
+
+        .wallet-status.connected {
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.2), rgba(0, 200, 0, 0.1));
+            border: 1px solid rgba(0, 255, 0, 0.4);
+            color: #00FF00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        .wallet-status.disconnected {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.2), rgba(200, 0, 0, 0.1));
+            border: 1px solid rgba(255, 0, 0, 0.4);
+            color: #FF6B6B;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+        }
+
+        .connect-wallet-btn {
+            background: linear-gradient(145deg, #4682B4, #87CEEB);
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 8px rgba(70, 130, 180, 0.3);
+        }
+
+        .connect-wallet-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Settings Button Styles */
+        .settings-btn-corner {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(145deg, #4682B4, #87CEEB);
+            border: none;
+            font-size: 20px;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 8px rgba(70, 130, 180, 0.3);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-btn-corner:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(70, 130, 180, 0.4);
+        }
+
+        .settings-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .settings-btn {
+            background: linear-gradient(145deg, #4682B4, #87CEEB);
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 8px rgba(70, 130, 180, 0.3);
+        }
+
+        .settings-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(70, 130, 180, 0.4);
+        }
+
+        /* Settings Panel Styles */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(135, 206, 235, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-panel.show {
+            display: flex;
+        }
+
+        .settings-content {
+            background: linear-gradient(135deg, #E0F6FF, #B0E0E6);
+            border: 2px solid #4682B4;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(70, 130, 180, 0.4);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 2px solid rgba(70, 130, 180, 0.3);
+            background: rgba(135, 206, 235, 0.2);
+        }
+
+        .settings-header h2 {
+            margin: 0;
+            color: #4682B4;
+            font-size: 24px;
+        }
+
+        .close-settings-btn {
+            background: none;
+            border: none;
+            color: #4682B4;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .close-settings-btn:hover {
+            background: rgba(70, 130, 180, 0.2);
+        }
+
+        .settings-tabs {
+            display: flex;
+            background: rgba(135, 206, 235, 0.1);
+            border-bottom: 2px solid rgba(70, 130, 180, 0.3);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 15px 10px;
+            color: #4682B4;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: rgba(135, 206, 235, 0.3);
+        }
+
+        .tab-btn.active {
+            background: rgba(135, 206, 235, 0.4);
+            border-bottom-color: #4682B4;
+            color: #4682B4;
+        }
+
+        .settings-body {
+            padding: 30px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Profile Tab Styles */
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(135, 206, 235, 0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(70, 130, 180, 0.3);
+        }
+
+        .profile-item .label {
+            font-weight: bold;
+            color: #4682B4;
+        }
+
+        .profile-item .value {
+            color: #4682B4;
+            font-family: monospace;
+        }
+
+        /* Tokens Tab Styles */
+        .tokens-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .token-balance {
+            text-align: center;
+            padding: 20px;
+            background: rgba(135, 206, 235, 0.2);
+            border-radius: 15px;
+            border: 2px solid rgba(70, 130, 180, 0.3);
+        }
+
+        .token-balance h3 {
+            margin: 0 0 10px 0;
+            color: #4682B4;
+        }
+
+        .token-amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #4682B4;
+            margin: 10px 0;
+        }
+
+        .token-rate {
+            color: #4682B4;
+            font-size: 14px;
+        }
+
+        .token-history h4 {
+            color: #4682B4;
+            margin: 0 0 15px 0;
+        }
+
+        .token-transactions {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .no-transactions {
+            text-align: center;
+            color: #4682B4;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* Leaderboard Tab Styles */
+        .leaderboard-container h3 {
+            color: #4682B4;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        .leaderboard-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .loading-leaderboard {
+            text-align: center;
+            color: #4682B4;
+            padding: 20px;
+        }
+
+        /* Matches Tab Styles */
+        .matches-container h3 {
+            color: #4682B4;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        .matches-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .no-matches {
+            text-align: center;
+            color: #4682B4;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* Audio Tab Styles */
+        .audio-settings h3 {
+            color: #4682B4;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        .audio-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(135, 206, 235, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(70, 130, 180, 0.3);
+        }
+
+        .audio-control label {
+            color: #4682B4;
+            font-weight: bold;
+        }
+
+        .toggle-btn {
+            background: linear-gradient(145deg, #4682B4, #87CEEB);
+            border: none;
+            padding: 8px 16px;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.off {
+            background: linear-gradient(145deg, #666, #999);
+        }
+
+        .volume-slider {
+            width: 150px;
+            margin: 0 10px;
+        }
+
+                .volume-value {
+            color: #4682B4;
+            font-weight: bold;
+            min-width: 40px;
+        }
+
+        .token-balance {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .notification.success {
+            background: linear-gradient(145deg, #00FF00, #00CC00);
+            border: 2px solid #00FF00;
+        }
+
+        .notification.error {
+            background: linear-gradient(145deg, #FF0000, #CC0000);
+            border: 2px solid #FF0000;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .rewards-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            z-index: 20;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .achievement, .reward {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .achievement.claimed, .reward.claimed {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: rgba(0, 255, 0, 0.5);
+        }
+
+        .achievement.unclaimed, .reward.unavailable {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: rgba(255, 0, 0, 0.3);
+        }
+
+        .claimed-badge {
+            color: #00FF00;
+            font-weight: bold;
+        }
+
+        .cooldown {
+            color: #FF6B6B;
+            font-style: italic;
+        }
+
+        .rewards-panel button {
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rewards-panel button:hover {
+            transform: scale(1.05);
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #87CEEB;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .start-button {
+            background: linear-gradient(145deg, #4682B4, #87CEEB);
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            margin: 0;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 16px rgba(70, 130, 180, 0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+        }
+
+        .start-button:active {
+            transform: scale(0.95);
+        }
+
+        .start-button.coming-soon {
+            background: linear-gradient(145deg, #666, #444);
+            color: #999;
+            cursor: not-allowed;
+            animation: none;
+            margin-top: 10px;
+            opacity: 0.7;
+        }
+
+        .start-button.coming-soon:hover {
+            transform: none;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        /* Recharge Loading Bar Styles */
+        .recharge-container {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(135, 206, 235, 0.3);
+            border-radius: 12px;
+            border: 2px solid rgba(70, 130, 180, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .recharge-label {
+            color: #4682B4;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .recharge-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(135, 206, 235, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            border: 1px solid rgba(70, 130, 180, 0.3);
+        }
+
+        .recharge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00FF00, #32CD32, #00FF00);
+            border-radius: 4px;
+            width: 100%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            animation: rechargeGlow 2s ease-in-out infinite alternate;
+        }
+
+        .recharge-fill.charging {
+            background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
+            animation: chargingGlow 1s ease-in-out infinite alternate;
+        }
+
+        .recharge-fill.depleted {
+            background: linear-gradient(90deg, #FF4444, #CC0000, #FF4444);
+            animation: depletedGlow 1s ease-in-out infinite alternate;
+        }
+
+        .recharge-text {
+            color: #87CEEB;
+            font-size: 14px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        @keyframes rechargeGlow {
+            0% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+            100% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.8); }
+        }
+
+        @keyframes chargingGlow {
+            0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+            100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+        }
+
+        @keyframes depletedGlow {
+            0% { box-shadow: 0 0 10px rgba(255, 68, 68, 0.5); }
+            100% { box-shadow: 0 0 20px rgba(255, 68, 68, 0.8); }
+        }
+
+        .wallet-section {
+            margin: 0 0 25px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 16px;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .wallet-section h3 {
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+        }
+
+        .player-info-section {
+            margin: 12px 0;
+        }
+
+        .player-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .player-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .player-info-item span:first-child {
+            color: #87CEEB;
+            font-weight: bold;
+        }
+
+        .player-info-item span:last-child {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+
+
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #87CEEB 0%, #B0E0E6 50%, #E0F6FF 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #4682B4;
+            z-index: 100;
+        }
+        
+        .loading-screen h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+            color: #4682B4;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .loading-bar {
+            width: 300px;
+            height: 20px;
+            background: rgba(135, 206, 235, 0.3);
+            border: 2px solid #4682B4;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .loading-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4682B4, #87CEEB);
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: loading-shimmer 1.5s infinite;
+        }
+        
+        @keyframes loading-shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .loading-text {
+            color: #4682B4;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+
+        
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .game-container {
+                border-radius: 0;
+                border: none;
+            }
+            
+            .ui-overlay {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            
+            .left-panel, .right-panel {
+                padding: 10px;
+            }
+            
+            .left-panel {
+                min-width: 300px;
+            }
+            
+            .health-container, .bomb-container {
+                display: block;
+                width: 100%;
+                margin-left: 0;
+                margin-bottom: 10px;
+            }
+            
+            .right-panel {
+                min-width: 300px;
+            }
+            
+            .score-container, .total-score-container, .level-container, .lives-container {
+                display: block;
+                width: 100%;
+                margin-left: 0;
+                margin-bottom: 10px;
+            }
+            
+            .health-bar {
+                width: 100%;
+                height: 20px;
+            }
+            
+            .menu-button {
+                top: 10px;
+                left: 10px;
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            .sound-toggle {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            
+            .controls {
+                top: 65px;
+                left: 10px;
+                padding: 15px;
+                font-size: 11px;
+                min-width: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="top-ui">
+                <div class="left-panel">
+                    <div class="health-container">
+                        <div class="health-icon">
+                            <img src="Sprites/emojis/heart.png" alt="Heart" class="heart-image">
+                        </div>
+                        <div class="health-count" id="healthText">100</div>
+                        <div class="health-bar">
+                            <div class="health-fill" id="healthFill"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bomb-container">
+                        <div class="bomb-icon">
+                            <img src="Sprites/emojis/bomb.png" alt="Bomb" class="bomb-image">
+                        </div>
+                        <span class="bomb-count" id="bombText">x 3/3</span>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-container">
+                        <div class="score-icon">
+                            <img src="Sprites/emojis/score.png" alt="Score" class="score-image">
+                        </div>
+                        <div class="score-count" id="scoreText">0</div>
+                        <div class="score-label">Current</div>
+                    </div>
+                    
+                    <div class="total-score-container">
+                        <div class="score-icon">
+                            <img src="Sprites/emojis/shield.png" alt="Total Score" class="score-image">
+                        </div>
+                        <div class="score-count" id="totalScoreText">0</div>
+                        <div class="score-label">Total</div>
+                    </div>
+                    
+                    <div class="level-container">
+                        <div class="level-icon">
+                            <img src="Sprites/emojis/lvl.png" alt="Level" class="level-image">
+                        </div>
+                        <div class="level-count" id="levelText">1</div>
+                    </div>
+                    <div class="lives-container">
+                        <div class="lives-icon">
+                            <img src="Sprites/emojis/lives.png" alt="Lives" class="lives-image">
+                        </div>
+                        <div class="lives-count" id="livesText">3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+        
+
+        
+
+        
+        <!-- Rewards Panel -->
+        <div class="rewards-panel" id="rewardsPanel" style="display: none;">
+            <h3>🏆 Achievements & Rewards</h3>
+            <div id="achievementContainer"></div>
+            <h4>📅 Daily Rewards</h4>
+            <div id="dailyRewardContainer"></div>
+            <h4>📊 Weekly Rewards</h4>
+            <div id="weeklyRewardContainer"></div>
+        </div>
+        
+        <div class="mobile-controls">
+            <div class="dpad">
+                <div class="dpad-btn up" data-key="ArrowUp">↑</div>
+                <div class="dpad-btn left" data-key="ArrowLeft">←</div>
+                <div class="dpad-btn right" data-key="ArrowRight">→</div>
+                <div class="dpad-btn down" data-key="ArrowDown">↓</div>
+            </div>
+            <div class="control-btn jump" data-key="Space">JUMP</div>
+            <div class="control-btn bomb" data-key="KeyB">BOMB</div>
+        </div>
+        
+        <div class="welcome-menu" id="welcomeMenu">
+            <button class="settings-btn-corner" id="settingsBtn">⚙️</button>
+            <div class="welcome-content">
+                <h1>Kaboom</h1>
+                
+                <!-- Wallet Connection Section -->
+                <div class="wallet-section">
+                    <h3>🔗 Connect Wallet</h3>
+                    <div class="wallet-status disconnected" id="walletStatus">Wallet not connected</div>
+                    <button class="connect-wallet-btn" id="connectWalletBtn">Connect Wallet</button>
+                </div>
+                
+                <div id="startButtonContainer" style="display: none; margin: 0; text-align: center;">
+                    <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent); margin: 20px 0;"></div>
+                    
+                    <!-- Recharge Loading Bar -->
+                    <div class="recharge-container">
+                        <div class="recharge-label">⚡ Recharged</div>
+                        <div class="recharge-bar">
+                            <div class="recharge-fill" id="rechargeFill"></div>
+                        </div>
+                        <div class="recharge-text" id="rechargeText">Ready to Kaboom!</div>
+                    </div>
+                    
+                    <button class="start-button" id="startButton">Play (PVE)</button>
+                    <button class="start-button coming-soon" id="pvpButton" disabled>PVP (Coming Soon..)</button>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h2>⚙️ Settings</h2>
+                    <button class="close-settings-btn" id="closeSettingsBtn">✕</button>
+                </div>
+                
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="profile">👤 Profile</button>
+                    <button class="tab-btn" data-tab="tokens">💰 Tokens</button>
+                    <button class="tab-btn" data-tab="leaderboard">🏆 Leaderboard</button>
+                    <button class="tab-btn" data-tab="matches">🎮 Matches</button>
+                    <button class="tab-btn" data-tab="audio">🔊 Audio</button>
+                </div>
+                
+                <div class="settings-body">
+                    <!-- Profile Tab -->
+                    <div class="tab-content active" id="profile-tab">
+                        <div class="profile-info">
+                            <div class="profile-item">
+                                <span class="label">Wallet Address:</span>
+                                <span class="value" id="profileWallet">Not Connected</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label">Username:</span>
+                                <span class="value" id="profileUsername">-</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label">Level:</span>
+                                <span class="value" id="profileLevel">1</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label">Total Score:</span>
+                                <span class="value" id="profileTotalScore">0</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label">Games Played:</span>
+                                <span class="value" id="profileGamesPlayed">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tokens Tab -->
+                    <div class="tab-content" id="tokens-tab">
+                        <div class="tokens-info">
+                            <div class="token-balance">
+                                <h3>$BOOM Tokens</h3>
+                                <div class="token-amount" id="settingsTokenBalance">0</div>
+                                <div class="token-rate">Earn 0.1 tokens per score point</div>
+                            </div>
+                            <div class="token-history">
+                                <h4>Recent Earnings</h4>
+                                <div class="token-transactions" id="tokenTransactions">
+                                    <div class="no-transactions">No transactions yet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Leaderboard Tab -->
+                    <div class="tab-content" id="leaderboard-tab">
+                        <div class="leaderboard-container">
+                            <h3>🏆 Top Players</h3>
+                            <div class="leaderboard-list" id="leaderboardList">
+                                <div class="loading-leaderboard">Loading leaderboard...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Matches Tab -->
+                    <div class="tab-content" id="matches-tab">
+                        <div class="matches-container">
+                            <h3>🎮 Recent Matches</h3>
+                            <div class="matches-list" id="matchesList">
+                                <div class="no-matches">No matches played yet</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Audio Tab -->
+                    <div class="tab-content" id="audio-tab">
+                        <div class="audio-settings">
+                            <h3>🔊 Audio Settings</h3>
+                            <div class="audio-control">
+                                <label for="soundToggle">Sound Effects</label>
+                                <button class="toggle-btn" id="settingsSoundToggle">ON</button>
+                            </div>
+                            <div class="audio-control">
+                                <label for="musicToggle">Background Music</label>
+                                <button class="toggle-btn" id="settingsMusicToggle">ON</button>
+                            </div>
+                            <div class="audio-control">
+                                <label for="volumeSlider">Master Volume</label>
+                                <input type="range" id="volumeSlider" min="0" max="100" value="80" class="volume-slider">
+                                <span class="volume-value">80%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading-screen" id="loadingScreen">
+                            <h2>Kaboom</h2>
+            <div class="loading-bar">
+                <div class="loading-fill" id="loadingFill"></div>
+            </div>
+            <div id="loadingText">Loading sprites...</div>
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>GAME OVER</h2>
+            <div class="final-score" id="finalScore">Final Score: 0</div>
+            
+            <!-- Game Over Action Buttons -->
+            <div class="game-over-buttons">
+                <button class="game-over-btn profile-btn" id="profileBtn">Profile</button>
+                <button class="game-over-btn recharge-btn" id="rechargeBtn">Recharge</button>
+            </div>
+        </div>
+        
+        <div class="controls" id="controls">
+            <div class="controls-title">🎮 CONTROLS</div>
+            <div class="control-item">WASD / Arrow Keys - Move</div>
+            <div class="control-item">Space - Jump</div>
+            <div class="control-item">B - Place Bomb</div>
+            <div class="control-item">P - Pause</div>
+            <div class="control-item">M - Toggle Music</div>
+            
+            <div class="control-separator"></div>
+            
+            <!-- Player Info Section -->
+            <div class="player-info-section">
+                <div class="controls-title">👤 PLAYER INFO</div>
+                <div class="player-info-item">
+                    <span>Wallet:</span>
+                    <span id="playerWalletStatus">Not Connected</span>
+                </div>
+                <div class="player-info-item">
+                                            <span>$BOOM:</span>
+                    <span id="playerTokenBalance">0</span>
+                </div>
+                <div class="player-info-item">
+                    
+                </div>
+                <div class="player-info-item">
+                    <span>Level:</span>
+                    <span id="playerLevel">1</span>
+                </div>
+                <div class="player-info-item">
+                    <span>Score:</span>
+                    <span id="playerScore">0</span>
+                </div>
+            </div>
+            
+            <div class="control-separator"></div>
+            
+            <div class="sound-toggle" id="soundToggle">🔊 Sound</div>
+            <div class="sound-toggle" id="musicToggle">🎵 Music</div>
+        </div>
+        
+        <div class="pause-screen" id="pauseScreen">
+            <h2>⏸️ PAUSED</h2>
+            <div class="hint-text">Press P to resume</div>
+        </div>
+    </div>
+    
+    <!-- Background music audio element -->
+    <audio id="backgroundMusic" loop preload="auto">
+        <source src="music/Cyber punk.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Solana Web3.js -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    
+    <!-- Web3 Scripts -->
+    <script src="web3/wallet-connection.js"></script>
+    <script src="web3/reward-system.js"></script>
+    <script src="web3/player-registry-client.js"></script>
+    <script src="web3/player-data-manager.js"></script>
+    <script src="web3/recharge-manager.js"></script>
+    
+    <script>
+        // Immediate debugging
+        console.log('🔍 IMMEDIATE CHECK - PlayerDataManager type:', typeof PlayerDataManager);
+        console.log('🔍 IMMEDIATE CHECK - PlayerDataManager value:', PlayerDataManager);
+        if (typeof PlayerDataManager !== 'undefined') {
+            console.log('✅ PlayerDataManager is available immediately');
+        } else {
+            console.error('❌ PlayerDataManager is NOT available immediately');
+        }
+    </script>
+    
+    <script src="game.js"></script>
+    
+    <!-- Direct Sound Button Test -->
+
+    
+    <!-- Web3 Initialization -->
+    <script>
+
+        
+        // Initialize Web3 components
+        let walletConnection;
+        let rewardSystem;
+        
+        // Flag to track if Web3 is ready
+        window.web3Ready = false;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                console.log('🔧 Initializing Web3 components...');
+                
+                // Check if Solana Web3.js is loaded
+                if (typeof solanaWeb3 === 'undefined') {
+                    console.error('❌ Solana Web3.js not loaded!');
+                    alert('Error: Solana Web3.js failed to load. Please refresh the page.');
+                    return;
+                }
+                
+                console.log('✅ Solana Web3.js loaded successfully');
+                
+                // Initialize wallet connection
+                walletConnection = new WalletConnection();
+                
+                // Make wallet connection globally available for game.js
+                window.walletConnection = walletConnection;
+                
+                // Initialize reward system
+                rewardSystem = new RewardSystem(walletConnection);
+                
+                // Make reward system globally available
+                window.rewardSystem = rewardSystem;
+                
+                // Initialize Player Data Manager for database integration (immediately)
+                console.log('🔍 Checking PlayerDataManager availability...');
+                console.log('PlayerDataManager type:', typeof PlayerDataManager);
+                console.log('PlayerDataManager value:', PlayerDataManager);
+                
+                if (typeof PlayerDataManager !== 'undefined') {
+                    try {
+                        window.playerDataManager = new PlayerDataManager();
+                        console.log('✅ Player Data Manager initialized for database integration');
+                        console.log('window.playerDataManager:', window.playerDataManager);
+                    } catch (error) {
+                        console.error('❌ Error initializing PlayerDataManager:', error);
+                    }
+                } else {
+                    console.error('❌ PlayerDataManager is not defined!');
+                }
+                
+                // Initialize RechargeManager if wallet is already connected
+                if (typeof RechargeManager !== 'undefined' && walletConnection && walletConnection.isConnected && walletConnection.publicKey) {
+                    const walletAddress = walletConnection.publicKey.toString();
+                    console.log('🔋 Wallet already connected, initializing RechargeManager for:', walletAddress);
+                    
+                    if (window.rechargeManager) {
+                        // If RechargeManager exists, switch to new wallet
+                        window.rechargeManager.switchWallet(walletAddress).then((success) => {
+                            if (success) {
+                                console.log('✅ RechargeManager switched to existing wallet connection');
+                                window.rechargeManager.updateUI();
+                            } else {
+                                console.warn('⚠️ RechargeManager wallet switch failed for existing wallet');
+                            }
+                        }).catch(error => {
+                            console.error('❌ Error switching RechargeManager wallet:', error);
+                        });
+                    } else {
+                        // Create new RechargeManager
+                        window.rechargeManager = new RechargeManager();
+                        window.rechargeManager.initialize(walletAddress).then((success) => {
+                            if (success) {
+                                console.log('✅ RechargeManager initialized for existing wallet connection');
+                                window.rechargeManager.updateUI();
+                            } else {
+                                console.warn('⚠️ RechargeManager initialization failed for existing wallet');
+                            }
+                        }).catch(error => {
+                            console.error('❌ Error initializing RechargeManager for existing wallet:', error);
+                        });
+                    }
+                }
+                
+                // Initialize Player Registry client when wallet is connected
+                walletConnection.onConnect = async (connection, wallet) => {
+                    if (typeof PlayerRegistryClient !== 'undefined') {
+                        window.playerRegistry = new PlayerRegistryClient(connection, wallet);
+                        console.log('✅ Player Registry client initialized');
+                        
+                        // Check if player profile exists
+                        const profileExists = await window.playerRegistry.playerProfileExists();
+                        if (!profileExists) {
+                            console.log('📝 Player profile not found, will create on first game action');
+                        } else {
+                            console.log('📋 Player profile found');
+                        }
+                    }
+                    
+                    // Initialize RechargeManager when wallet is connected
+                    if (typeof RechargeManager !== 'undefined' && wallet.publicKey) {
+                        const walletAddress = wallet.publicKey.toString();
+                        
+                        if (window.rechargeManager) {
+                            // If RechargeManager exists, switch to new wallet
+                            const rechargeSwitch = await window.rechargeManager.switchWallet(walletAddress);
+                            
+                            if (rechargeSwitch) {
+                                console.log('✅ RechargeManager switched to new wallet:', walletAddress);
+                                // Update UI immediately after switching
+                                window.rechargeManager.updateUI();
+                            } else {
+                                console.warn('⚠️ RechargeManager wallet switch failed');
+                            }
+                        } else {
+                            // Create new RechargeManager
+                            window.rechargeManager = new RechargeManager();
+                            const rechargeInit = await window.rechargeManager.initialize(walletAddress);
+                            
+                            if (rechargeInit) {
+                                console.log('✅ RechargeManager initialized for wallet:', walletAddress);
+                                // Update UI immediately after initialization
+                                window.rechargeManager.updateUI();
+                            } else {
+                                console.warn('⚠️ RechargeManager initialization failed');
+                            }
+                        }
+                    }
+                };
+                
+                // Set up wallet button
+                const connectButton = document.getElementById('connectWalletBtn');
+                if (connectButton) {
+                    connectButton.onclick = () => {
+                        console.log('🔗 Wallet connect button clicked');
+                        walletConnection.connectWallet();
+                    };
+                } else {
+                    console.warn('⚠️ Connect wallet button not found');
+                }
+
+                // Handle wallet disconnection
+                walletConnection.onDisconnect = () => {
+                    console.log('🔗 Wallet disconnected - clearing recharge status');
+                    if (window.rechargeManager) {
+                        window.rechargeManager.clearStatus();
+                        // Update UI to show disconnected state
+                        const rechargeFill = document.getElementById('rechargeFill');
+                        const rechargeText = document.getElementById('rechargeText');
+                        if (rechargeFill && rechargeText) {
+                            rechargeFill.style.width = '0%';
+                            rechargeText.textContent = 'Wallet disconnected';
+                        }
+                    }
+                };
+
+
+
+                // Set up start button with recharge system integration
+                const startButton = document.getElementById('startButton');
+                if (startButton) {
+                    startButton.onclick = async () => {
+                        console.log('🎮 Start button clicked!');
+                        
+                        // Check if wallet is connected
+                        if (!window.walletConnection || !window.walletConnection.isConnected) {
+                            alert('Please connect your wallet first!');
+                            return;
+                        }
+                        
+                        // Check if RechargeManager is available and player can play
+                        if (window.rechargeManager) {
+                            const canPlay = window.rechargeManager.canPlay();
+                            
+                            if (!canPlay) {
+                                // Don't show popup - just return silently
+                                // The recharge bar will show the countdown automatically
+                                console.log('🔋 Player cannot play - recharge bar will show countdown');
+                                return;
+                            }
+                            
+                            // Player can play - start the game
+                            console.log('✅ Player can play - starting game');
+                            if (typeof window.startGame === 'function') {
+                                window.startGame();
+                            } else {
+                                console.error('❌ startGame function not found!');
+                                alert('Error: Game initialization failed. Please refresh the page.');
+                            }
+                        } else {
+                            // Try to initialize RechargeManager if not available
+                            console.log('🔋 RechargeManager not available - attempting to initialize...');
+                            if (typeof RechargeManager !== 'undefined' && window.walletConnection && window.walletConnection.publicKey) {
+                                const walletAddress = window.walletConnection.publicKey.toString();
+                                window.rechargeManager = new RechargeManager();
+                                
+                                try {
+                                    const rechargeInit = await window.rechargeManager.initialize(walletAddress);
+                                    if (rechargeInit) {
+                                        console.log('✅ RechargeManager initialized on start button click');
+                                        window.rechargeManager.updateUI();
+                                        
+                                        // Now check if player can play
+                                        const canPlay = window.rechargeManager.canPlay();
+                                        if (!canPlay) {
+                                            // Don't show popup - just return silently
+                                            // The recharge bar will show the countdown automatically
+                                            console.log('🔋 Player cannot play - recharge bar will show countdown');
+                                            return;
+                                        }
+                                        
+                                        // Player can play - start the game
+                                        console.log('✅ Player can play - starting game');
+                                        if (typeof window.startGame === 'function') {
+                                            window.startGame();
+                                        } else {
+                                            console.error('❌ startGame function not found!');
+                                            alert('Error: Game initialization failed. Please refresh the page.');
+                                        }
+                                    } else {
+                                        console.warn('⚠️ RechargeManager initialization failed - starting game without recharge check');
+                                        if (typeof window.startGame === 'function') {
+                                            window.startGame();
+                                        } else {
+                                            console.error('❌ startGame function not found!');
+                                            alert('Error: Game initialization failed. Please refresh the page.');
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error initializing RechargeManager:', error);
+                                    // Fallback: start game without recharge check
+                                    if (typeof window.startGame === 'function') {
+                                        window.startGame();
+                                    } else {
+                                        console.error('❌ startGame function not found!');
+                                        alert('Error: Game initialization failed. Please refresh the page.');
+                                    }
+                                }
+                            } else {
+                                // Fallback if RechargeManager not available
+                                console.warn('⚠️ RechargeManager not available - starting game without recharge check');
+                                if (typeof window.startGame === 'function') {
+                                    window.startGame();
+                                } else {
+                                    console.error('❌ startGame function not found!');
+                                    alert('Error: Game initialization failed. Please refresh the page.');
+                                }
+                            }
+                        }
+                    };
+                    console.log('✅ Start button click handler attached with recharge system');
+                } else {
+                    console.warn('⚠️ Start button not found');
+                }
+                
+
+                
+                // Mark Web3 as ready
+                window.web3Ready = true;
+                console.log('✅ Web3 components initialized successfully');
+                
+                // Save player profile when page is about to unload
+                window.addEventListener('beforeunload', function() {
+                    if (window.playerRegistry && window.playerProfile && window.game) {
+                        // Update profile with current game state
+                        window.playerProfile.totalScore = window.game.gameState.totalScore || 0;
+                        const newTokens = Math.floor(window.playerProfile.totalScore * 0.10);
+                        window.playerProfile.boomTokens = newTokens;
+                        
+                        // Save profile synchronously (localStorage)
+                        try {
+                            const playerAddress = window.walletConnection.publicKey.toString();
+                            const storageKey = `kaboom_${playerAddress}`;
+                            localStorage.setItem(storageKey, JSON.stringify(window.playerProfile));
+                            console.log('💾 Profile saved before page unload');
+                            
+                            // Update token display before unload
+                            const playerTokenBalance = document.getElementById('playerTokenBalance');
+                            if (playerTokenBalance) {
+                                playerTokenBalance.textContent = newTokens;
+                            }
+                        } catch (error) {
+                            console.error('❌ Error saving profile before unload:', error);
+                        }
+                    }
+                });
+                
+                        // Initialize Recharge System
+        initializeRechargeSystem();
+        
+        // Initialize Settings Panel
+        initializeSettingsPanel();
+                
+            } catch (error) {
+                console.error('❌ Error initializing Web3 components:', error);
+                alert('Error initializing Web3 components: ' + error.message);
+            }
+        });
+        
+        // Recharge System - Now handled by RechargeManager
+        function initializeRechargeSystem() {
+            console.log('⚡ Recharge system initialization - now handled by RechargeManager');
+            
+            // The actual recharge logic is now handled by RechargeManager
+            // This function is kept for compatibility but does nothing
+            // RechargeManager will be initialized when wallet connects
+        }
+        
+        // Settings Panel Initialization
+        function initializeSettingsPanel() {
+            console.log('⚙️ Initializing settings panel...');
+            
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Settings button click handler
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', () => {
+                    settingsPanel.classList.add('show');
+                    updateSettingsData();
+                });
+            }
+            
+            // Close button click handler
+            if (closeSettingsBtn) {
+                closeSettingsBtn.addEventListener('click', () => {
+                    settingsPanel.classList.remove('show');
+                });
+            }
+            
+            // Close on outside click
+            settingsPanel.addEventListener('click', (e) => {
+                if (e.target === settingsPanel) {
+                    settingsPanel.classList.remove('show');
+                }
+            });
+            
+            // Tab switching
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    btn.classList.add('active');
+                    document.getElementById(`${tabName}-tab`).classList.add('active');
+                    
+                    // Load specific tab data
+                    loadTabData(tabName);
+                });
+            });
+            
+            // Audio controls
+            const settingsSoundToggle = document.getElementById('settingsSoundToggle');
+            const settingsMusicToggle = document.getElementById('settingsMusicToggle');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeValue = document.querySelector('.volume-value');
+            
+            if (settingsSoundToggle) {
+                settingsSoundToggle.addEventListener('click', () => {
+                    const isOn = settingsSoundToggle.textContent === 'ON';
+                    settingsSoundToggle.textContent = isOn ? 'OFF' : 'ON';
+                    settingsSoundToggle.classList.toggle('off', isOn);
+                    
+                    // Update game sound settings
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.soundEnabled = !isOn;
+                    }
+                });
+            }
+            
+            if (settingsMusicToggle) {
+                settingsMusicToggle.addEventListener('click', () => {
+                    const isOn = settingsMusicToggle.textContent === 'ON';
+                    settingsMusicToggle.textContent = isOn ? 'OFF' : 'ON';
+                    settingsMusicToggle.classList.toggle('off', isOn);
+                    
+                    // Update game music settings
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.musicEnabled = !isOn;
+                        if (isOn) {
+                            window.game.soundManager.stopBackgroundMusic();
+                        } else {
+                            window.game.soundManager.startBackgroundMusic();
+                        }
+                    }
+                });
+            }
+            
+            if (volumeSlider && volumeValue) {
+                volumeSlider.addEventListener('input', (e) => {
+                    const volume = e.target.value;
+                    volumeValue.textContent = volume + '%';
+                    
+                    // Update game volume
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.setVolume(volume / 100);
+                    }
+                });
+            }
+            
+            console.log('✅ Settings panel initialized');
+        }
+        
+        // Update settings data
+        function updateSettingsData() {
+            // Update profile data
+            if (window.walletConnection && window.walletConnection.publicKey) {
+                const walletAddress = window.walletConnection.publicKey.toString();
+                document.getElementById('profileWallet').textContent = 
+                    walletAddress.substring(0, 8) + '...' + walletAddress.substring(walletAddress.length - 8);
+            }
+            
+            if (window.playerProfile) {
+                document.getElementById('profileUsername').textContent = window.playerProfile.username || '-';
+                document.getElementById('profileLevel').textContent = window.playerProfile.level || 1;
+                document.getElementById('profileTotalScore').textContent = window.playerProfile.totalScore || 0;
+                document.getElementById('profileGamesPlayed').textContent = window.playerProfile.gamesPlayed || 0;
+                document.getElementById('settingsTokenBalance').textContent = window.playerProfile.boomTokens || 0;
+            }
+            
+            // Update audio settings
+            if (window.game && window.game.soundManager) {
+                const soundToggle = document.getElementById('settingsSoundToggle');
+                const musicToggle = document.getElementById('settingsMusicToggle');
+                const volumeSlider = document.getElementById('volumeSlider');
+                
+                if (soundToggle) {
+                    soundToggle.textContent = window.game.soundManager.soundEnabled ? 'ON' : 'OFF';
+                    soundToggle.classList.toggle('off', !window.game.soundManager.soundEnabled);
+                }
+                
+                if (musicToggle) {
+                    musicToggle.textContent = window.game.soundManager.musicEnabled ? 'ON' : 'OFF';
+                    musicToggle.classList.toggle('off', !window.game.soundManager.musicEnabled);
+                }
+                
+                if (volumeSlider) {
+                    volumeSlider.value = Math.round(window.game.soundManager.volume * 100);
+                    document.querySelector('.volume-value').textContent = volumeSlider.value + '%';
+                }
+            }
+        }
+        
+        // Load specific tab data
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'leaderboard':
+                    loadLeaderboard();
+                    break;
+                case 'matches':
+                    loadMatches();
+                    break;
+                case 'tokens':
+                    loadTokenHistory();
+                    break;
+            }
+        }
+        
+        // Load leaderboard data
+        async function loadLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            if (!leaderboardList) return;
+            
+            try {
+                const response = await fetch('/api/players');
+                const players = await response.json();
+                
+                if (players.length === 0) {
+                    leaderboardList.innerHTML = '<div class="no-leaderboard">No players found</div>';
+                    return;
+                }
+                
+                const leaderboardHTML = players.slice(0, 10).map((player, index) => `
+                    <div class="leaderboard-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(135, 206, 235, 0.2); border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(70, 130, 180, 0.3);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: bold; color: #4682B4;">#${index + 1}</span>
+                            <span style="color: #4682B4;">${player.username || 'Anonymous'}</span>
+                        </div>
+                        <span style="color: #4682B4; font-weight: bold;">${player.total_score || 0}</span>
+                    </div>
+                `).join('');
+                
+                leaderboardList.innerHTML = leaderboardHTML;
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                leaderboardList.innerHTML = '<div class="error">Failed to load leaderboard</div>';
+            }
+        }
+        
+        // Load matches data
+        async function loadMatches() {
+            const matchesList = document.getElementById('matchesList');
+            if (!matchesList) return;
+            
+            try {
+                if (window.walletConnection && window.walletConnection.publicKey) {
+                    const walletAddress = window.walletConnection.publicKey.toString();
+                    const response = await fetch(`/api/players/${walletAddress}/sessions`);
+                    const sessions = await response.json();
+                    
+                    if (sessions.length === 0) {
+                        matchesList.innerHTML = '<div class="no-matches">No matches played yet</div>';
+                        return;
+                    }
+                    
+                    const matchesHTML = sessions.slice(0, 10).map(session => `
+                        <div class="match-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(135, 206, 235, 0.2); border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(70, 130, 180, 0.3);">
+                            <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <span style="color: #4682B4; font-weight: bold;">Score: ${session.score_earned || 0}</span>
+                                <span style="color: #4682B4; font-size: 12px;">${new Date(session.session_start).toLocaleDateString()}</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="color: #4682B4;">Tokens: ${session.tokens_earned || 0}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    matchesList.innerHTML = matchesHTML;
+                } else {
+                    matchesList.innerHTML = '<div class="no-matches">Connect wallet to view matches</div>';
+                }
+            } catch (error) {
+                console.error('Error loading matches:', error);
+                matchesList.innerHTML = '<div class="error">Failed to load matches</div>';
+            }
+        }
+        
+        // Load token history
+        function loadTokenHistory() {
+            const tokenTransactions = document.getElementById('tokenTransactions');
+            if (!tokenTransactions) return;
+            
+            // For now, show a simple message. This can be expanded with actual transaction history
+            tokenTransactions.innerHTML = '<div class="no-transactions">Token transaction history coming soon</div>';
+        }
+        
+        // Game Over Button Handlers
+        function initializeGameOverButtons() {
+            const profileBtn = document.getElementById('profileBtn');
+            const rechargeBtn = document.getElementById('rechargeBtn');
+            
+            // Profile Button Handler - Navigate to Recharged page
+            if (profileBtn) {
+                profileBtn.onclick = () => {
+                    console.log('👤 Profile button clicked - navigating to recharge page');
+                    
+                    // Navigate to recharge page (welcome menu with recharge system)
+                    navigateToRechargePage();
+                };
+            }
+            
+            // Recharge Button Handler - Show recharge status
+            if (rechargeBtn) {
+                rechargeBtn.onclick = () => {
+                    console.log('⚡ Recharge button clicked');
+                    
+                    if (window.rechargeManager) {
+                        const status = window.rechargeManager.rechargeStatus;
+                        const debugInfo = window.rechargeManager.getDebugInfo();
+                        
+                        console.log('🔋 RechargeManager debug info:', debugInfo);
+                        
+                        if (status) {
+                            if (status.is_recharging) {
+                                const minutesRemaining = Math.ceil(status.time_remaining_ms / (1000 * 60));
+                                alert(`⚡ Game is recharging!\n\nWallet: ${debugInfo.currentWallet}\nTime remaining: ${minutesRemaining} minutes\n\nPlease wait for the recharge to complete.`);
+                            } else if (status.lives_remaining === 0) {
+                                alert(`⚡ No lives remaining!\n\nWallet: ${debugInfo.currentWallet}\n\nYou need to wait for the 45-minute recharge period to complete.\n\nThis prevents rapid replaying and ensures fair gameplay.`);
+                            } else {
+                                alert(`⚡ Recharge Status\n\nWallet: ${debugInfo.currentWallet}\nLives remaining: ${status.lives_remaining}/3\n\nYou can play the game!`);
+                            }
+                        } else {
+                            alert(`⚡ Recharge Status\n\nWallet: ${debugInfo.currentWallet}\nLives remaining: 3/3\n\nYou can play the game!`);
+                        }
+                    } else {
+                        alert('⚡ Recharge system not available');
+                    }
+                };
+            }
+            
+            console.log('🎮 Game over buttons initialized');
+        }
+        
+        // Navigate to Recharge Page Function
+        function navigateToRechargePage() {
+            // Check if recharge system is available
+            if (window.rechargeSystem) {
+                // Set charge to 100% and start charging animation
+                window.rechargeSystem.setChargeLevel(100);
+                window.rechargeSystem.startCharging();
+            }
+            
+            // Hide game over screen
+            const gameOverScreen = document.getElementById('gameOver');
+            if (gameOverScreen) {
+                gameOverScreen.style.display = 'none';
+            }
+            
+            // Show welcome menu (recharge page)
+            const welcomeMenu = document.getElementById('welcomeMenu');
+            if (welcomeMenu) {
+                welcomeMenu.style.display = 'block';
+            }
+            
+            // Show start button container with recharge bar
+            const startButtonContainer = document.getElementById('startButtonContainer');
+            if (startButtonContainer) {
+                startButtonContainer.style.display = 'block';
+            }
+            
+            console.log('🔄 Navigated to recharge page successfully');
+        }
+        
+
+        
+        // Initialize game over buttons when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for other systems to initialize
+            setTimeout(() => {
+                initializeGameOverButtons();
+            }, 1000);
+        });
+    </script>
+    
+
+</body>
+</html>

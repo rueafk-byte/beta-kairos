@@ -1,0 +1,31 @@
+{
+  "name": "pirate-bomb-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for Pirate Bomb Web3 Game",
+  "main": "deploy/deploy.js",
+  "scripts": {
+    "deploy": "node deploy/deploy.js",
+    "build": "anchor build",
+    "test": "anchor test",
+    "deploy:devnet": "anchor deploy --provider.cluster devnet",
+    "deploy:mainnet": "anchor deploy --provider.cluster mainnet"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.87.6",
+    "@solana/spl-token": "^0.3.9",
+    "@project-serum/anchor": "^0.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0"
+  },
+  "keywords": [
+    "solana",
+    "web3",
+    "game",
+    "blockchain",
+    "tokens",
+    "nft"
+  ],
+  "author": "Pirate Bomb Team",
+  "license": "MIT"
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+    </style>
+</head>
+<body>
+    <h1>Database Integration Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Check Server Health</h3>
+        <button onclick="testHealth()">Test Health</button>
+        <div id="health-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Save Player Data</h3>
+        <button onclick="testSavePlayer()">Save Test Player</button>
+        <div id="save-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Load Player Data</h3>
+        <button onclick="testLoadPlayer()">Load Test Player</button>
+        <div id="load-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: List All Players</h3>
+        <button onclick="testListPlayers()">List Players</button>
+        <div id="list-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<strong>Success:</strong> ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testSavePlayer() {
+            const resultDiv = document.getElementById('save-result');
+            try {
+                const testPlayer = {
+                    wallet_address: '5u4iU6mN2fWKbD8pCNizvtdFYSSxubcgKZh5Szf5ziKv',
+                    username: 'TestPlayer',
+                    level: 2,
+                    total_score: 250,
+                    boom_tokens: 25,
+                    lives: 2,
+                    current_score: 150
+                };
+                
+                const response = await fetch(`${API_BASE}/players`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testPlayer)
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<strong>Success:</strong> ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testLoadPlayer() {
+            const resultDiv = document.getElementById('load-result');
+            try {
+                const response = await fetch(`${API_BASE}/players/5u4iU6mN2fWKbD8pCNizvtdFYSSxubcgKZh5Szf5ziKv`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<strong>Success:</strong> ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testListPlayers() {
+            const resultDiv = document.getElementById('list-result');
+            try {
+                const response = await fetch(`${API_BASE}/players`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<strong>Success:</strong> ${JSON.stringify(data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>

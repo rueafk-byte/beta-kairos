@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💥 Player Registry Test - Kaboom Web3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .status-bar {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+        
+        .status-indicator.connected {
+            background: #44ff44;
+        }
+        
+        .wallet-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn.success {
+            background: linear-gradient(45deg, #44ff44, #00aa00);
+        }
+        
+        .btn.warning {
+            background: linear-gradient(45deg, #ffaa00, #ff8800);
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section h3 {
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .log-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        
+        .log-entry.info {
+            background: rgba(0, 123, 255, 0.2);
+            border-left: 3px solid #007bff;
+        }
+        
+        .log-entry.success {
+            background: rgba(40, 167, 69, 0.2);
+            border-left: 3px solid #28a745;
+        }
+        
+        .log-entry.warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-left: 3px solid #ffc107;
+        }
+        
+        .log-entry.error {
+            background: rgba(220, 53, 69, 0.2);
+            border-left: 3px solid #dc3545;
+        }
+        
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .wallet-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .wallet-info {
+            flex: 1;
+        }
+        
+        .wallet-name {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .wallet-description {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏴‍☠️ Player Registry Test</h1>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="wallet-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Wallet not connected</span>
+            </div>
+            <div id="walletInfo"></div>
+        </div>
+        
+        <!-- Wallet Connection Section -->
+        <div class="test-section">
+            <h3>🔗 Wallet Connection</h3>
+            <div class="wallet-buttons">
+                <button class="btn" id="connectBtn">Connect Wallet</button>
+                <button class="btn warning" id="disconnectBtn" disabled>Disconnect</button>
+            </div>
+            
+            <!-- Available Wallets -->
+            <div id="availableWallets" style="display: none;">
+                <h4>Available Wallets:</h4>
+                <div id="walletList"></div>
+            </div>
+        </div>
+        
+        <!-- Player Registry Tests -->
+        <div class="test-section">
+            <h3>📋 Player Registry Tests</h3>
+            
+            <!-- Initialize Player -->
+            <div class="input-group">
+                <label for="username">Username (3-20 characters):</label>
+                <input type="text" id="username" placeholder="Enter username" maxlength="20">
+            </div>
+            
+            <div class="test-buttons">
+                <button class="btn" id="initPlayerBtn" disabled>Initialize Player</button>
+                <button class="btn" id="checkProfileBtn" disabled>Check Profile</button>
+            </div>
+            
+            <!-- Update Level -->
+            <div class="input-group">
+                <label for="level">Level:</label>
+                <input type="number" id="level" placeholder="1" min="1" max="40" value="1">
+            </div>
+            <div class="input-group">
+                <label for="score">Score:</label>
+                <input type="number" id="score" placeholder="1000" min="0" value="1000">
+            </div>
+            
+            <div class="test-buttons">
+                <button class="btn" id="updateLevelBtn" disabled>Update Level</button>
+                <button class="btn" id="addAchievementBtn" disabled>Add Achievement</button>
+                <button class="btn" id="recordBossBtn" disabled>Record Boss Defeat</button>
+            </div>
+            
+            <!-- Rewards -->
+            <div class="test-buttons">
+                <button class="btn" id="claimDailyBtn" disabled>Claim Daily Reward</button>
+                <button class="btn" id="claimWeeklyBtn" disabled>Claim Weekly Reward</button>
+                <button class="btn" id="updateLoginBtn" disabled>Update Login Time</button>
+            </div>
+        </div>
+        
+        <!-- Log Panel -->
+        <div class="test-section">
+            <h3>📝 Activity Log</h3>
+            <div class="log-panel" id="logPanel"></div>
+        </div>
+    </div>
+
+    <!-- Web3 Scripts -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="web3/wallet-connection.js"></script>
+    
+    <script>
+        // Global variables
+        let walletConnection = null;
+        let playerRegistry = null;
+        let playerProfile = null;
+        
+        // Logging function
+        function log(message, type = 'info') {
+            const logPanel = document.getElementById('logPanel');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logPanel.appendChild(logEntry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        // Update status
+        function updateStatus(connected, text) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const walletInfo = document.getElementById('walletInfo');
+            
+            if (connected) {
+                indicator.className = 'status-indicator connected';
+                statusText.textContent = text;
+                walletInfo.textContent = '✅ Connected';
+            } else {
+                indicator.className = 'status-indicator';
+                statusText.textContent = text;
+                walletInfo.textContent = '';
+            }
+        }
+        
+        // Enable/disable buttons
+        function setButtonsEnabled(enabled) {
+            const buttons = [
+                'disconnectBtn',
+                'initPlayerBtn',
+                'checkProfileBtn',
+                'updateLevelBtn',
+                'addAchievementBtn',
+                'recordBossBtn',
+                'claimDailyBtn',
+                'claimWeeklyBtn',
+                'updateLoginBtn'
+            ];
+            
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.disabled = !enabled;
+                }
+            });
+        }
+        
+        // Show available wallets
+        function showAvailableWallets() {
+            if (!walletConnection) return;
+            
+            const availableWallets = walletConnection.getAvailableWallets();
+            const walletList = document.getElementById('walletList');
+            const availableWalletsDiv = document.getElementById('availableWallets');
+            
+            if (availableWallets.length === 0) {
+                log('❌ No Solana wallets found. Please install Phantom, Solflare, or Backpack.', 'error');
+                return;
+            }
+            
+            walletList.innerHTML = '';
+            availableWallets.forEach(wallet => {
+                const walletOption = document.createElement('div');
+                walletOption.className = 'wallet-option';
+                walletOption.onclick = () => connectSpecificWallet(wallet.key);
+                walletOption.innerHTML = `
+                    <div class="wallet-icon">${wallet.icon}</div>
+                    <div class="wallet-info">
+                        <div class="wallet-name">${wallet.name}</div>
+                        <div class="wallet-description">${wallet.description}</div>
+                    </div>
+                `;
+                walletList.appendChild(walletOption);
+            });
+            
+            availableWalletsDiv.style.display = 'block';
+            log(`🔍 Found ${availableWallets.length} available wallet(s)`, 'info');
+        }
+        
+        // Connect to specific wallet
+        async function connectSpecificWallet(walletType) {
+            if (!walletConnection) {
+                log('❌ WalletConnection not initialized', 'error');
+                return;
+            }
+            
+            log(`🔗 Connecting to ${walletType}...`, 'info');
+            try {
+                const success = await walletConnection.connectWallet(walletType);
+                if (success) {
+                    log(`✅ Successfully connected to ${walletType}`, 'success');
+                    updateStatus(true, `Connected: ${walletConnection.publicKey.toString().slice(0, 8)}...`);
+                    setButtonsEnabled(true);
+                    
+                    // Initialize simple Player Registry (simulated)
+                    playerRegistry = {
+                        // Initialize player
+                        async initializePlayer(username) {
+                            try {
+                                log('🏴‍☠️ Initializing player profile...', 'info');
+                                
+                                // Simulate blockchain transaction
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                
+                                // Create player profile
+                                playerProfile = {
+                                    username: username,
+                                    level: 1,
+                                    score: 0,
+                                    totalScore: 0,
+                                    boomTokens: 0,
+                    
+                                    achievements: [],
+                                    lastLogin: new Date().toISOString(),
+                                    createdAt: new Date().toISOString()
+                                };
+                                
+                                log(`✅ Player profile initialized! Username: ${username}`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to initialize: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Check profile
+                        async playerProfileExists() {
+                            log('📋 Checking player profile...', 'info');
+                            return playerProfile !== null;
+                        },
+                        
+                        // Update level
+                        async updatePlayerLevel(level, score) {
+                            try {
+                                log(`📈 Updating level to ${level}, score to ${score}`, 'info');
+                                
+                                if (playerProfile) {
+                                    playerProfile.level = level;
+                                    playerProfile.score = score;
+                                    playerProfile.totalScore += score;
+                                    playerProfile.boomTokens += Math.floor(score / 10);
+                                }
+                                
+                                log(`✅ Level updated! New level: ${level}, Score: ${score}`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to update: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Add achievement
+                        async addAchievement(achievementId, achievementName, rewardAmount) {
+                            try {
+                                log(`🏆 Adding achievement: ${achievementName}`, 'info');
+                                
+                                if (playerProfile) {
+                                    playerProfile.achievements.push({
+                                        id: achievementId,
+                                        name: achievementName,
+                                        reward: rewardAmount,
+                                        earnedAt: new Date().toISOString()
+                                    });
+                                    playerProfile.boomTokens += rewardAmount;
+                                }
+                                
+                                log(`✅ Achievement added! ${achievementName} (+${rewardAmount} $BOOM)`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to add achievement: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Record boss defeat
+                        async recordBossDefeat(bossId, bossLevel, rewardAmount) {
+                            try {
+                                log(`💀 Recording boss defeat: ${bossId} (Level ${bossLevel})`, 'info');
+                                
+                                if (playerProfile) {
+                                    playerProfile.boomTokens += rewardAmount;
+                                }
+                                
+                                log(`✅ Boss defeat recorded! ${bossId} (+${rewardAmount} $BOOM)`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to record boss: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Claim daily reward
+                        async claimDailyReward() {
+                            try {
+                                log('📅 Claiming daily reward...', 'info');
+                                
+                                if (playerProfile) {
+                                    playerProfile.boomTokens += 50;
+                                }
+                                
+                                log(`✅ Daily reward claimed! (+50 $BOOM)`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to claim daily: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Claim weekly reward
+                        async claimWeeklyReward() {
+                            try {
+                                log('📆 Claiming weekly reward...', 'info');
+                                
+                                if (playerProfile) {
+                                    playerProfile.boomTokens += 200;
+                                }
+                                
+                                log(`✅ Weekly reward claimed! (+200 $BOOM)`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to claim weekly: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Update login time
+                        async updateLoginTime() {
+                            try {
+                                log('🕐 Updating login time...', 'info');
+                                
+                                if (playerProfile) {
+                                    playerProfile.lastLogin = new Date().toISOString();
+                                }
+                                
+                                log(`✅ Login time updated!`, 'success');
+                                return { success: true, signature: 'simulated_tx_signature' };
+                            } catch (error) {
+                                log(`❌ Failed to update login: ${error.message}`, 'error');
+                                return { success: false, error: error.message };
+                            }
+                        },
+                        
+                        // Get player profile
+                        getPlayerProfile() {
+                            return playerProfile;
+                        }
+                    };
+                    
+                    log('✅ Player Registry client initialized', 'success');
+                    
+                    // Check if player profile exists
+                    try {
+                        const profileExists = await playerRegistry.playerProfileExists();
+                        if (profileExists) {
+                            log('📋 Player profile found', 'success');
+                            const profile = playerRegistry.getPlayerProfile();
+                            log(`📊 Current stats: Level ${profile.level}, Score ${profile.score}, $BOOM ${profile.boomTokens}`, 'info');
+                        } else {
+                            log('📝 Player profile not found - ready to create', 'info');
+                        }
+                    } catch (error) {
+                        log(`⚠️ Could not check profile: ${error.message}`, 'warning');
+                    }
+                } else {
+                    log(`❌ Failed to connect to ${walletType}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error connecting to ${walletType}: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🔧 Initializing Player Registry Test...');
+            
+            // Wait for WalletConnection to be available
+            if (typeof WalletConnection !== 'undefined') {
+                // Initialize wallet connection
+                walletConnection = new WalletConnection();
+                log('✅ WalletConnection initialized');
+                
+                // Show available wallets
+                showAvailableWallets();
+                
+                // Set up event listeners
+                setupEventListeners();
+                
+                log('✅ Test environment ready');
+            } else {
+                log('❌ WalletConnection not loaded - check script loading', 'error');
+                // Retry after a short delay
+                setTimeout(() => {
+                    if (typeof WalletConnection !== 'undefined') {
+                        walletConnection = new WalletConnection();
+                        log('✅ WalletConnection initialized (retry)');
+                        showAvailableWallets();
+                        setupEventListeners();
+                        log('✅ Test environment ready');
+                    } else {
+                        log('❌ WalletConnection still not available', 'error');
+                    }
+                }, 1000);
+            }
+        });
+        
+        function setupEventListeners() {
+            // Connect button - show wallet options
+            document.getElementById('connectBtn').onclick = () => {
+                if (!walletConnection) {
+                    log('❌ WalletConnection not initialized', 'error');
+                    return;
+                }
+                log('🔗 Showing wallet options...', 'info');
+                showAvailableWallets();
+            };
+            
+            // Disconnect button
+            document.getElementById('disconnectBtn').onclick = () => {
+                if (!walletConnection) {
+                    log('❌ WalletConnection not initialized', 'error');
+                    return;
+                }
+                log('🔌 Disconnecting wallet...', 'info');
+                walletConnection.disconnectWallet();
+                updateStatus(false, 'Wallet disconnected');
+                setButtonsEnabled(false);
+                playerRegistry = null;
+                playerProfile = null;
+                log('🔌 Wallet disconnected', 'warning');
+            };
+            
+            // Initialize player button
+            document.getElementById('initPlayerBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                const username = document.getElementById('username').value;
+                if (!username || username.length < 3 || username.length > 20) {
+                    log('❌ Username must be 3-20 characters', 'error');
+                    return;
+                }
+                
+                log(`👤 Initializing player profile: ${username}`, 'info');
+                try {
+                    const result = await playerRegistry.initializePlayer(username);
+                    if (result.success) {
+                        log(`✅ Player profile initialized! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to initialize: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Check profile button
+            document.getElementById('checkProfileBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                log('📋 Checking player profile...', 'info');
+                try {
+                    const exists = await playerRegistry.playerProfileExists();
+                    if (exists) {
+                        log('✅ Player profile exists', 'success');
+                        const profile = playerRegistry.getPlayerProfile();
+                                                    log(`📊 Profile: Level ${profile.level}, Score ${profile.score}, $BOOM ${profile.boomTokens}`, 'info');
+                        log(`🏆 Achievements: ${profile.achievements.length} earned`, 'info');
+                    } else {
+                        log('⚠️ Player profile not found', 'warning');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Update level button
+            document.getElementById('updateLevelBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                const level = parseInt(document.getElementById('level').value);
+                const score = parseInt(document.getElementById('score').value);
+                
+                log(`📈 Updating level to ${level}, score to ${score}`, 'info');
+                try {
+                    const result = await playerRegistry.updatePlayerLevel(level, score);
+                    if (result.success) {
+                        log(`✅ Level updated! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to update: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Add achievement button
+            document.getElementById('addAchievementBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                log('🏆 Adding test achievement...', 'info');
+                try {
+                    const result = await playerRegistry.addAchievement(
+                        'test_achievement',
+                        'Test Achievement',
+                        50
+                    );
+                    if (result.success) {
+                        log(`✅ Achievement added! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to add achievement: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Record boss defeat button
+            document.getElementById('recordBossBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                log('💀 Recording boss defeat...', 'info');
+                try {
+                    const result = await playerRegistry.recordBossDefeat('TestBoss', 5, 300);
+                    if (result.success) {
+                        log(`✅ Boss defeat recorded! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to record boss: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Claim daily reward button
+            document.getElementById('claimDailyBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                log('📅 Claiming daily reward...', 'info');
+                try {
+                    const result = await playerRegistry.claimDailyReward();
+                    if (result.success) {
+                        log(`✅ Daily reward claimed! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to claim daily: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Claim weekly reward button
+            document.getElementById('claimWeeklyBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                log('📆 Claiming weekly reward...', 'info');
+                try {
+                    const result = await playerRegistry.claimWeeklyReward();
+                    if (result.success) {
+                        log(`✅ Weekly reward claimed! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to claim weekly: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+            
+            // Update login time button
+            document.getElementById('updateLoginBtn').onclick = async () => {
+                if (!playerRegistry) {
+                    log('❌ PlayerRegistry not initialized - connect wallet first', 'error');
+                    return;
+                }
+                
+                log('🕐 Updating login time...', 'info');
+                try {
+                    const result = await playerRegistry.updateLoginTime();
+                    if (result.success) {
+                        log(`✅ Login time updated! TX: ${result.signature}`, 'success');
+                    } else {
+                        log(`❌ Failed to update login: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                }
+            };
+        }
+    </script>
+</body>
+</html>
