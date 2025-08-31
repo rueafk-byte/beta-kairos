@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: kaboom-game
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: LOG_LEVEL
+        value: info
+      - key: CORS_ORIGIN
+        value: https://kaboom.onrender.com
