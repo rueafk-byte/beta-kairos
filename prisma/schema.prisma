@@ -1,0 +1,60 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./db/dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Player {
+  id        Int      @id @default(autoincrement())
+  address   String   @unique
+  createdAt DateTime @default(now())
+  balances  Balance?
+  bets      Bet[]
+  transfers Transfer[]
+}
+
+model Balance {
+  id        Int      @id @default(autoincrement())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  Int      @unique
+  available BigInt   @default(0)
+  locked    BigInt   @default(0)
+  points    BigInt   @default(0) // $Kairos points earned from betting
+  updatedAt DateTime @updatedAt
+}
+
+model Round {
+  id          Int      @id
+  timeframe   Int
+  startAt     DateTime
+  endAt       DateTime
+  winningSide String?
+  status      String   @default("open") // open|resolved
+  bets        Bet[]
+  createdAt   DateTime @default(now())
+}
+
+model Bet {
+  id        Int      @id @default(autoincrement())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  Int
+  round     Round    @relation(fields: [roundId], references: [id])
+  roundId   Int
+  amount    BigInt
+  side      String // up|down
+  status    String  @default("pending") // pending|won|lost|refund
+  createdAt DateTime @default(now())
+}
+
+model Transfer {
+  id        Int      @id @default(autoincrement())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  Int
+  type      String // deposit|withdraw|bet_lock|bet_release|payout|adjustment
+  amount    BigInt
+  meta      Json?
+  createdAt DateTime @default(now())
+}
